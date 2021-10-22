@@ -8,7 +8,7 @@ cd benchmarks
 #Prepare CoNLL2014
 wget https://www.comp.nus.edu.sg/~nlp/conll14st/conll14st-test-data.tar.gz
 tar -xf conll14st-test-data.tar.gz
-python3 scripts/get_orig_from_m2.py conll14st-test-data/noalt/official-2014.combined.m2 \
+python3 ../scripts/get_orig_from_m2.py conll14st-test-data/noalt/official-2014.combined.m2 \
       -out conll14st-test-data/noalt/official-2014.combined.orig.txt
 
 
@@ -16,7 +16,7 @@ python3 scripts/get_orig_from_m2.py conll14st-test-data/noalt/official-2014.comb
 wget https://www.cl.cam.ac.uk/research/nl/bea2019st/data/wi+locness_v2.1.bea19.tar.gz
 tar -xf wi+locness_v2.1.bea19.tar.gz
 mv wi+locness wi+locness_v2.1.bea19
-python3 scripts/get_orig_from_m2.py wi+locness_v2.1.bea19/m2/ABCN.dev.gold.bea19.m2 \
+python3 ../scripts/get_orig_from_m2.py wi+locness_v2.1.bea19/m2/ABCN.dev.gold.bea19.m2 \
       -out wi+locness_v2.1.bea19/m2/ABCN.dev.bea19.orig.txt
 
 

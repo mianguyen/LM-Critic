@@ -33,11 +33,11 @@ We then use the LM-Critic to generate training data for grammatical error correc
 
 ## 0. Dependencies
 
-Run the following commands to create a conda environment (assuming CUDA10.1):
+Run the following commands to create a conda environment that is capable of running on A100 GPU:
 ```bash
 conda create -n lm-critic python=3.8
 conda activate lm-critic
-pip install torch==1.6.0 torchvision==0.7.0
+conda install pytorch torchvision torchaudio cudatoolkit=11.3 -c pytorch
 pip install transformers==4.3.3 datasets==1.3.0 absl-py rouge-score
 pip install nltk wandb editdistance spacy==3.0.5
 python3 -m nltk.downloader punkt
