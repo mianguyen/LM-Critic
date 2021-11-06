@@ -4,7 +4,7 @@ import random
 import hashlib
 import numpy as np
 from tqdm import tqdm
-from transformers import GPT2Tokenizer, GPT2Model, GPT2LMHeadModel
+from transformers import AutoTokenizer, AutoModelForCausalLM
 
 sys.path.insert(0, '.')
 from critic.perturbations import get_local_neighbors_char_level, get_local_neighbors_word_level
@@ -12,18 +12,17 @@ from utils.spacy_tokenizer import spacy_tokenize_gec
 
 
 model_name = 'gpt2'
-tokenizer = GPT2Tokenizer.from_pretrained(model_name)
-tokenizer.pad_token = tokenizer.eos_token
-model = GPT2LMHeadModel.from_pretrained(model_name)
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForCausalLM.from_pretrained(model_name)
 model.eval()
 model.cuda()
 print (f'Loaded {model_name}')
 
 
-def get_gpt2_loss(input_ids, attention_mask, labels):
+def get_loss(input_ids, attention_mask, labels):
     with torch.no_grad():
         outputs = model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
-        lm_logits = outputs[1] #[bsize, seqlen, vocab]
+        lm_logits = outputs["logits"]
         if labels is not None:
             shift_logits = lm_logits[..., :-1, :].contiguous()
             shift_labels = labels[..., 1:].contiguous()
@@ -37,20 +36,30 @@ def get_gpt2_loss(input_ids, attention_mask, labels):
 
 MAX_LENGTH = 66
 
-def run_gpt2(sents, cuda=True, model_name=None):
+def get_inputs(sents):
+    if model_name == "gpt2":
+      tokenizer.pad_token = tokenizer.eos_token
+      _sents = [tokenizer.bos_token + s for s in sents]
+      inputs = tokenizer(sents, return_tensors="pt", padding=True)
+    elif model_name == "xlnet-large-cased":
+      _sents = [s + tokenizer.sep_token + tokenizer.cls_token for s in sents]
+      inputs = tokenizer(sents, return_tensors="pt", padding=True)
+    return inputs
+
+def run_model(sents, cuda=True, model_name=None):
     assert isinstance(sents, list)
-    _sents = [tokenizer.bos_token + s for s in sents]
-    inputs = tokenizer(_sents, return_tensors="pt", padding=True)
+    inputs = get_inputs(sents)
+    
     if inputs['input_ids'].size(1) > MAX_LENGTH:
         return None
     if cuda:
         inputs = {k: v.cuda() for k, v in inputs.items()}
-    loss = get_gpt2_loss(input_ids=inputs['input_ids'], attention_mask=inputs['attention_mask'], labels=inputs['input_ids'])
-    logps = - loss.detach().cpu()
+    loss = get_loss(input_ids=inputs['input_ids'], attention_mask=inputs['attention_mask'], labels=inputs['input_ids'])
+    logps = - loss.detach()
     return logps
 
 
-def gpt2_critic_char_level_only(sent, verbose=1, cuda=True, fp16=True, seed='auto', n_samples=100):
+def critic_char_level_only(sent, verbose=1, cuda=True, fp16=True, seed='auto', n_samples=100):
     if seed == 'auto':
         seed = int(hashlib.md5(sent.encode()).hexdigest(), 16) % (2**32) #Seed must be between 0 and 2**32 - 1
     if verbose > 1:
@@ -64,9 +73,9 @@ def gpt2_critic_char_level_only(sent, verbose=1, cuda=True, fp16=True, seed='aut
         sents = [sent] + list(sent_perturbations)
         if fp16:
             with torch.cuda.amp.autocast():
-                logps = run_gpt2(sents, cuda)
+                logps = run_model(sents, cuda)
         else:
-            logps = run_gpt2(sents, cuda)
+            logps = run_model(sents, cuda)
         if logps is None:
             if verbose:
                 print ('Invalid input. Maybe the sentence is too long.')
@@ -87,7 +96,7 @@ def gpt2_critic_char_level_only(sent, verbose=1, cuda=True, fp16=True, seed='aut
     return is_good, float(logps[0]), counter_example
 
 
-def gpt2_critic(sent, verbose=1, cuda=True, fp16=True, seed='auto', n_samples=100, word_level_mode='refine'):
+def critic(sent, verbose=1, cuda=True, fp16=True, seed='auto', n_samples=100, word_level_mode='refine'):
     if seed == 'auto':
         seed = int(hashlib.md5(sent.encode()).hexdigest(), 16) % (2**32) #Seed must be between 0 and 2**32 - 1
     if verbose > 1:
@@ -104,9 +113,9 @@ def gpt2_critic(sent, verbose=1, cuda=True, fp16=True, seed='auto', n_samples=10
         sents = [orig_sent] + list(sent_perturbations_c.union(sent_perturbations_w))
         if fp16:
             with torch.cuda.amp.autocast():
-                logps = run_gpt2(sents, cuda)
+                logps = run_model(sents, cuda)
         else:
-            logps = run_gpt2(sents, cuda)
+            logps = run_model(sents, cuda)
         if logps is None:
             if verbose:
                 print ('Invalid input. Maybe the sentence is too long.')
@@ -132,4 +141,4 @@ def gpt2_critic(sent, verbose=1, cuda=True, fp16=True, seed='auto', n_samples=10
 if __name__ == '__main__':
     while True:
         sent = input("Enter a sentence: ")
-        _ = gpt2_critic(sent)
+        _ = critic(sent)

@@ -9,7 +9,7 @@ from collections import Counter
 
 sys.path.insert(0, '.')
 from utils.text_utils import detokenize_sent
-from critic.critic import run_gpt2, gpt2_critic
+from critic.critic import run_model, critic
 
 def load_data():
     data_path = 'eval_critic/eval_data.jsonl'
@@ -29,7 +29,7 @@ def get_logps(sents):
     for start in tqdm(range(0, len(sents), 100)):
         sents_sub = sents[start: start+100]
         sents_sub_detok = [detokenize_sent(sent) for sent in sents_sub]
-        logps = run_gpt2(sents_sub_detok)
+        logps = run_model(sents_sub_detok)
         assert logps is not None
         for i in range(len(sents_sub)):
             final.append({'sent': sents_sub[i], 'sent_detok': sents_sub_detok[i], 'logp': float(logps[i])})
@@ -93,11 +93,11 @@ evaluate_baseline_critic()
 def evaluate_LM_Critic():
     good_accs, bad_accs = [], []
     for obj in tqdm(good_logps):
-        res = gpt2_critic(obj['sent_detok'], verbose=0, seed=1, n_samples=100, word_level_mode='refine')
+        res = critic(obj['sent_detok'], verbose=0, seed=1, n_samples=100, word_level_mode='refine')
         pred = int(res[0])
         good_accs.append(pred==1)
     for obj in tqdm(bad_logps):
-        res = gpt2_critic(obj['sent_detok'], verbose=0, seed=1, n_samples=100, word_level_mode='refine')
+        res = critic(obj['sent_detok'], verbose=0, seed=1, n_samples=100, word_level_mode='refine')
         pred = int(res[0])
         bad_accs.append(pred==0)
     print ('\nLM-Critic:')
