@@ -11,7 +11,7 @@ from critic.perturbations import get_local_neighbors_char_level, get_local_neigh
 from utils.spacy_tokenizer import spacy_tokenize_gec
 
 
-model_name = 'gpt2'
+model_name = 'bert-large-cased'
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForCausalLM.from_pretrained(model_name)
 model.eval()
@@ -33,9 +33,6 @@ def get_loss(input_ids, attention_mask, labels):
             loss = (loss * shift_mask).sum(dim=1) #[bsize, ]
         return loss
 
-
-MAX_LENGTH = 66
-
 def get_inputs(sents):
     if model_name == "gpt2":
       tokenizer.pad_token = tokenizer.eos_token
@@ -44,18 +41,19 @@ def get_inputs(sents):
     elif model_name == "xlnet-large-cased":
       _sents = [s + tokenizer.sep_token + tokenizer.cls_token for s in sents]
       inputs = tokenizer(sents, return_tensors="pt", padding=True)
+    elif model_name == "bert-large-cased":
+      inputs = tokenizer(sents, return_tensors="pt", padding=True)
     return inputs
 
 def run_model(sents, cuda=True, model_name=None):
     assert isinstance(sents, list)
     inputs = get_inputs(sents)
     
-    if inputs['input_ids'].size(1) > MAX_LENGTH:
-        return None
     if cuda:
         inputs = {k: v.cuda() for k, v in inputs.items()}
     loss = get_loss(input_ids=inputs['input_ids'], attention_mask=inputs['attention_mask'], labels=inputs['input_ids'])
     logps = - loss.detach()
+    assert logps is not None
     return logps
 
 
