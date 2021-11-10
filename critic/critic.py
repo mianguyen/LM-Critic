@@ -11,7 +11,7 @@ from critic.perturbations import get_local_neighbors_char_level, get_local_neigh
 from utils.spacy_tokenizer import spacy_tokenize_gec
 
 
-model_name = 'bert-large-cased'
+model_name = 'gpt2'
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForCausalLM.from_pretrained(model_name)
 model.eval()
@@ -37,10 +37,10 @@ def get_inputs(sents):
     if model_name == "gpt2":
       tokenizer.pad_token = tokenizer.eos_token
       _sents = [tokenizer.bos_token + s for s in sents]
-      inputs = tokenizer(sents, return_tensors="pt", padding=True)
+      inputs = tokenizer(_sents, return_tensors="pt", padding=True)
     elif model_name == "xlnet-large-cased":
       _sents = [s + tokenizer.sep_token + tokenizer.cls_token for s in sents]
-      inputs = tokenizer(sents, return_tensors="pt", padding=True)
+      inputs = tokenizer(_sents, return_tensors="pt", padding=True)
     elif model_name == "bert-large-cased":
       inputs = tokenizer(sents, return_tensors="pt", padding=True)
     return inputs
