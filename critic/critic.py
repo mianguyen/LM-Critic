@@ -41,7 +41,7 @@ def get_inputs(sents):
     elif model_name == "xlnet-large-cased":
       _sents = [s + tokenizer.sep_token + tokenizer.cls_token for s in sents]
       inputs = tokenizer(_sents, return_tensors="pt", padding=True)
-    elif model_name == "bert-large-cased":
+    elif model_name == "bert-large-cased" or model_name == "roberta-base":
       inputs = tokenizer(sents, return_tensors="pt", padding=True)
     return inputs
 
