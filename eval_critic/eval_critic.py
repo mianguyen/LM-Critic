@@ -17,10 +17,12 @@ avail_models = {
     2: "gpt2-large",
     3: "gpt2-xl",
     4: "EleutherAI/gpt-neo-125M",
-    5: "xlnet-large-cased",
-    6: "xlnet-base-cased",
-    7: "facebook/bart-large",
-    8: "facebook/bart-base"
+    5: "EleutherAI/gpt-neo-1.3B",
+    6: "EleutherAI/gpt-neo-2.7B",
+    7: "xlnet-large-cased",
+    8: "xlnet-base-cased",
+    9: "facebook/bart-large",
+    10: "facebook/bart-base"
 }
 
 print("Choose a model from below:")
